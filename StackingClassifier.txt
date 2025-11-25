@@ -1,0 +1,58 @@
+### Strategy 4: Stacking Classifier - Meta-Learning Ensemble
+
+from sklearn.ensemble import StackingClassifier
+from sklearn.linear_model import LogisticRegression as LR
+
+print("="*70)
+print("STACKING CLASSIFIER")
+print("="*70)
+print("Strategy: Stack multiple models with a meta-learner\n")
+
+# Define base models (level 0)
+base_models = [
+    ('nn_tuned', best_nn),
+    ('rf_tuned', best_rf),
+    ('xgb_tuned', best_xgb)
+]
+
+# Define meta-learner (level 1)
+meta_learner = LR(max_iter=1000, random_state=42)
+
+# Create stacking classifier
+stacking_clf = StackingClassifier(
+    estimators=base_models,
+    final_estimator=meta_learner,
+    cv=5,
+    stack_method='predict_proba',
+    n_jobs=-1
+)
+
+print("Training Stacking Classifier (this may take a few minutes)...")
+stacking_clf.fit(X_train, y_train)
+
+# Evaluate
+y_pred_stack = stacking_clf.predict(X_test)
+y_prob_stack = stacking_clf.predict_proba(X_test)[:, 1]
+
+accuracy_stack = accuracy_score(y_test, y_pred_stack)
+precision_stack = precision_score(y_test, y_pred_stack)
+recall_stack = recall_score(y_test, y_pred_stack)
+f1_stack = f1_score(y_test, y_pred_stack)
+roc_auc_stack = roc_auc_score(y_test, y_prob_stack)
+
+print("\n" + "="*70)
+print("STACKING CLASSIFIER - TEST SET EVALUATION")
+print("="*70)
+print(f"Accuracy:  {accuracy_stack:.4f} ({accuracy_stack*100:.2f}%)")
+print(f"Precision: {precision_stack:.4f}")
+print(f"Recall:    {recall_stack:.4f}")
+print(f"F1-Score:  {f1_stack:.4f}")
+print(f"ROC AUC:   {roc_auc_stack:.4f}")
+
+print("\nConfusion Matrix:")
+print(confusion_matrix(y_test, y_pred_stack))
+
+if accuracy_stack >= 0.80:
+    print("\n🎉 SUCCESS! Stacking Classifier achieved 80%+ accuracy!")
+else:
+    print(f"\n⚠️  Stacking: {accuracy_stack*100:.2f}% - Need {(0.80 - accuracy_stack)*100:.2f} more pp")
